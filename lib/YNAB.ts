@@ -99,7 +99,15 @@ export class YNAB {
     return readFilePromise(cachePath, 'utf8')
       .then((data) => {
         this.requests -= 1;
-        return JSON.parse(data);
+        const cacheData = JSON.parse(data);
+        if (typeof cacheData._timestamp === 'undefined') {
+          throw new Error('Cache value does not have timestamp');
+        }
+
+        if (Date.now() - cacheData._timestamp > 60 * 60 * 1000) {
+          throw new Error('Cache value is stale');
+        }
+        return cacheData;
       })
       .catch((err) => {
         this.debug('Could not get from cache:', err);
@@ -124,7 +132,8 @@ export class YNAB {
       .then((res) => this.debugThrough(res, 'Got response from the API'))
       .then((res) => res.json())
       .then((json) => {
-        fs.writeFile(cachePath, JSON.stringify(json), (err) => {
+        const cacheData = { ...json, _timestamp: Date.now() };
+        fs.writeFile(cachePath, JSON.stringify(cacheData), (err) => {
           if (err) {
             console.error(`Error writing cache file: ${cachePath}`, err);
           }
