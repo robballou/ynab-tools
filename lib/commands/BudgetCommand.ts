@@ -8,7 +8,24 @@ const filterHidden = function filterHidden(list) {
 
 const addTotalProperty = function addTotalProperty(group) {
   return { ...group, total: 0 };
-}
+};
+
+const sortedCategoryGroupKeys = function sortedCategoryGroupKeys(groups: Object): string[] {
+  return Object.keys(groups).sort((groupKey1, groupKey2) => {
+    const group1 = groups[groupKey1];
+    const group2 = groups[groupKey2];
+
+    if (group1.total > group2.total) {
+      return 1;
+    }
+
+    if (group1.total < group2.total) {
+      return -1;
+    }
+
+    return 1;
+  });
+};
 
 export class BudgetCommand implements ICommand {
   debug = debug('ynab-tools:budget');
@@ -65,9 +82,17 @@ export class BudgetCommand implements ICommand {
           console.error(err);
         });
     }).then(() => {
-      Object.keys(categoryGroups).forEach((group) => {
+      let incomeDivision = false;
+      sortedCategoryGroupKeys(categoryGroups).forEach((group) => {
         const thisGroup = categoryGroups[group];
+        if (thisGroup.total === 0) {
+          return;
+        }
         const totalAmount = Math.abs(thisGroup.total / 1000);
+        if (thisGroup.total > 0 && !incomeDivision) {
+          incomeDivision = true;
+          console.log('---------------------------------------');
+        }
         console.log(`${thisGroup.name}: ${totalAmount}`);
       });
     })
