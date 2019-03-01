@@ -41,21 +41,35 @@ export class BudgetCommand implements ICommand {
 
     const budgetId = process.env.YNAB_BUDGET;
     this.debug('Budget ID', budgetId);
+    this.debug('Getting budget categories');
     const categories = this.ynab.getCategories(budgetId);
 
     const categoryGroups = {};
     const categoryGroupIndex = {};
     const categoryAmounts = [];
 
-    categories.then((categories) => {
-      filterHidden(categories.data.category_groups)
+    const today = new Date();
+    const isoToday = today.toISOString();
+    const since = args.since || isoToday.substr(0, isoToday.indexOf('T'));
+
+    const isoRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const sinceDate = isoRegex.exec(since);
+    if (sinceDate === null) {
+      this.debug(`Invalid date: ${since}`);
+      return;
+    }
+
+    // for each category, get their groups and the category transactions
+    categories.then((allCategories) => {
+      this.debug('Starting to build groups and get category transactions');
+      filterHidden(allCategories.data.category_groups)
         .forEach((group) => {
           categoryGroups[group.id] = addTotalProperty(group);
           filterHidden(group.categories).forEach((category) => {
             categoryGroupIndex[category.id] = category.category_group_id;
             categoryAmounts.push(this.ynab.getCategoryTransactions(budgetId, category.id, {
               query: {
-                since_date: '2019-02-01',
+                since_date: since,
               },
             }));
           });
@@ -63,15 +77,19 @@ export class BudgetCommand implements ICommand {
     }).then(() => {
       this.debug(`Waiting for ${categoryAmounts.length} promises`);
       return Promise.all(categoryAmounts)
-        .then((categories) => {
+        .then((categoryAmount) => {
           const categoryString = categories.length === 1 ? 'category' : 'categories';
-          this.debug(`Totaling transactions from ${categories.length} ${categoryString}`);
-          categories
+          this.debug(`Totaling transactions from ${categoryAmount.length} ${categoryString}`);
+          categoryAmount
             .filter((category) => category.data.transactions.length > 0)
             .forEach((category) => {
-              // this.debug(category);
-              // this.debug(category.data.transactions[0]);
               const transactionsTotal = category.data.transactions
+                // only count transactions that match the since year/month
+                .filter((transaction) => {
+                  const matchedDate = isoRegex.exec(transaction.date);
+                  return matchedDate[1] === sinceDate[1] && matchedDate[2] === sinceDate[2];
+                })
+                // total it
                 .reduce((total, transaction) => total + transaction.amount, 0);
               const categoryId = category.data.transactions[0].category_id;
               const categoryGroupId = categoryGroupIndex[categoryId];
@@ -82,6 +100,7 @@ export class BudgetCommand implements ICommand {
           console.error(err);
         });
     }).then(() => {
+      this.debug('Showing category totals');
       let incomeDivision = false;
       sortedCategoryGroupKeys(categoryGroups).forEach((group) => {
         const thisGroup = categoryGroups[group];
