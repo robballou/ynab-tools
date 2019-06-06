@@ -50,7 +50,7 @@ export class BudgetCommand implements ICommand {
 
     const today = new Date();
     const isoToday = today.toISOString();
-    const since = args.since || isoToday.substr(0, isoToday.indexOf('T'));
+    const since = args.month || isoToday.substr(0, isoToday.indexOf('T'));
 
     const isoRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
     const sinceDate = isoRegex.exec(since);
