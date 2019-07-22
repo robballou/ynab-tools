@@ -151,7 +151,7 @@ export class YNAB {
   async request(endpoint, options = {}) {
     const requestOptions = { ...this.options, ...options };
     const { base } = requestOptions;
-    const search = Object.keys(requestOptions.query).length > 0 ? `?${querystring.stringify(requestOptions.query)}` : '';
+    const search = Object.keys(requestOptions.query).length > 0 ? `?${querystring.stringify((requestOptions.query as querystring.ParsedUrlQueryInput))}` : '';
     const fullUrl = `${base}${endpoint}${search}`;
     return this.getFromCacheOrRequest(fullUrl);
   }
