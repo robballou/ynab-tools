@@ -61,7 +61,7 @@ export class BudgetCommand implements ICommand {
 
     // for each category, get their groups and the category transactions
     categories.then((allCategories) => {
-      this.debug('Starting to build groups and get category transactions');
+      this.debug(`Starting to build groups and get category transactions: ${since}`);
       filterHidden(allCategories.data.category_groups)
         .forEach((group) => {
           categoryGroups[group.id] = addTotalProperty(group);
@@ -83,6 +83,7 @@ export class BudgetCommand implements ICommand {
           categoryAmount
             .filter((category) => category.data.transactions.length > 0)
             .forEach((category) => {
+              this.debug(`Number of category transactions: ${category.data.transactions.length}`);
               const transactionsTotal = category.data.transactions
                 // only count transactions that match the since year/month
                 .filter((transaction) => {
@@ -105,6 +106,7 @@ export class BudgetCommand implements ICommand {
       sortedCategoryGroupKeys(categoryGroups).forEach((group) => {
         const thisGroup = categoryGroups[group];
         if (thisGroup.total === 0) {
+          this.debug(`skipping group ${thisGroup.name} (no data)`);
           return;
         }
         const totalAmount = Math.abs(thisGroup.total / 1000);

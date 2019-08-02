@@ -107,6 +107,8 @@ export class YNAB {
         if (Date.now() - cacheData._timestamp > 60 * 60 * 1000) {
           throw new Error('Cache value is stale');
         }
+
+        this.debug('Returning cached data');
         return cacheData;
       })
       .catch((err) => {
@@ -125,6 +127,7 @@ export class YNAB {
     })
       .then((res) => {
         if (res.status !== 200) {
+          this.debug(`Received status code ${res.status} from YNAB`, fullUrl);
           throw new Error(`Invalid status code back from YNAB request: ${res.status}`);
         }
         return res;

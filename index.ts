@@ -24,13 +24,15 @@ const main = function main(args) {
     debug.enable('ynab-tools:*');
   }
 
+  mainDebug({ args });
+
   if (_commands.names().indexOf(command) === -1) {
     console.error('Invalid command', command);
     process.exit(1);
   }
 
   const prereqs = [Promise.resolve()];
-  if (args.cache === false) {
+  if (args.cache === false || args.cache === 0) {
     prereqs.push(clearCache());
   }
 
