@@ -122,4 +122,8 @@ export class BudgetCommand implements ICommand {
 
     return true;
   }
+
+  help() {
+    console.log('Budget: yarn start budget --month=ISO-DATE');
+  }
 }

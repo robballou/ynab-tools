@@ -15,9 +15,12 @@ Object.keys(commands).forEach((command) => {
   _commands.register(new commands[command](ynab));
 });
 
-
 const mainDebug = debug('ynab-tools:main');
 const main = function main(args) {
+  if (args._.length === 0) {
+    args._.push('help');
+  }
+
   const command: string = args._.shift();
 
   if (args.verbose) {
